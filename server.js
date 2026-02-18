@@ -183,7 +183,8 @@ io.on('connection', (socket) => {
         x: spawnX, 
         y: spawnY, 
         health: 100, 
-        status: 'alive' 
+        status: 'alive', 
+        name: 'player' + Math.floor(Math.random() * 1000)
     };
 
     // Initialize cooldowns
@@ -200,7 +201,8 @@ io.on('connection', (socket) => {
             x: players[socket.id].x, 
             y: players[socket.id].y,
             health: players[socket.id].health,
-            status: players[socket.id].status
+            status: players[socket.id].status,
+            name: players[socket.id].name
         });
     });
 
@@ -214,6 +216,14 @@ io.on('connection', (socket) => {
                 y: data.y, 
                 direction: data.direction 
             });
+        }
+    });
+
+    socket.on('setName', (name) => {
+        if (players[socket.id]) {
+            players[socket.id].name = name;
+            io.emit('playerNameSet', { id: socket.id, name: name });
+            console.log(`Player ${socket.id} set name to ${name}`);
         }
     });
 

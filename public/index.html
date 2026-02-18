@@ -5,50 +5,327 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplayer Shooter</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #000;
+            background: #0a0a15;
+            font-family: 'Arial', sans-serif;
         }
         
         canvas {
             display: block;
         }
-        
-        #loading {
+
+        /* Login Screen */
+        #loginScreen {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.5s ease;
+        }
+
+        #loginScreen.hidden {
+            animation: fadeOut 0.5s ease;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .login-container {
+            background: rgba(26, 26, 46, 0.9);
+            border: 2px solid #00ffcc;
+            border-radius: 20px;
+            padding: 50px 60px;
+            box-shadow: 0 0 50px rgba(0, 255, 204, 0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .login-title {
+            font-size: 48px;
             color: #00ffcc;
-            font-family: Arial, sans-serif;
-            font-size: 24px;
-            z-index: 1000;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+        }
+
+        .login-subtitle {
+            font-size: 18px;
+            color: #8a8aa0;
+            margin-bottom: 40px;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            color: #00ffcc;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        #playerNameInput {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            background: rgba(42, 42, 78, 0.8);
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            color: #fff;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #playerNameInput:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        #playerNameInput::placeholder {
+            color: #6a6a8a;
+        }
+
+        .char-count {
+            text-align: right;
+            color: #8a8aa0;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        #startButton {
+            width: 100%;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00ffcc 0%, #00ccaa 100%);
+            color: #0a0a15;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 255, 204, 0.4);
+        }
+
+        #startButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 255, 204, 0.6);
+        }
+
+        #startButton:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #startButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-info {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(138, 138, 160, 0.3);
+        }
+
+        .game-info-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8a8aa0;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        .game-info-item::before {
+            content: '🎮';
+            margin-right: 8px;
+        }
+
+        #errorMessage {
+            color: #ff3366;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 255, 204, 0.3);
+            border-top-color: #00ffcc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner.active {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div id="loading">Loading...</div>
-    
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-title">🎯 SHOOTER</div>
+            <div class="login-subtitle">Enter the battlefield</div>
+            
+            <div class="input-group">
+                <label class="input-label" for="playerNameInput">YOUR NAME</label>
+                <input 
+                    type="text" 
+                    id="playerNameInput" 
+                    placeholder="Enter your name..."
+                    maxlength="15"
+                    autocomplete="off"
+                />
+                <div class="char-count">
+                    <span id="charCount">0</span>/15
+                </div>
+            </div>
+
+            <button id="startButton" disabled>
+                START GAME
+            </button>
+
+            <div id="errorMessage"></div>
+            <div class="spinner" id="loadingSpinner"></div>
+
+            <div class="game-info">
+                <div class="game-info-item">🔫 Shoot with Left Click</div>
+                <div class="game-info-item">💣 Place Landmine with Q</div>
+                <div class="game-info-item">⬆️⬇️⬅️➡️ Move with Arrow Keys</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
     
     <!-- Phaser 3 -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     
-    <!-- UI Script FIRST - so GameUI class is defined -->
+    <!-- UI Script -->
     <script src="ui.js"></script>
     
-    <!-- Main Game Script SECOND - uses GameUI -->
+    <!-- Main Game Script -->
     <script src="game.js"></script>
     
+    <!-- Login Handler -->
     <script>
-        // Hide loading screen once game starts
-        window.addEventListener('load', () => {
+        const loginScreen = document.getElementById('loginScreen');
+        const nameInput = document.getElementById('playerNameInput');
+        const startButton = document.getElementById('startButton');
+        const charCount = document.getElementById('charCount');
+        const errorMessage = document.getElementById('errorMessage');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        let playerName = '';
+
+        // Character counter
+        nameInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            charCount.textContent = value.length;
+            startButton.disabled = value.length === 0;
+            errorMessage.style.display = 'none';
+        });
+
+        // Enter key to start
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !startButton.disabled) {
+                startGame();
+            }
+        });
+
+        // Start button
+        startButton.addEventListener('click', startGame);
+
+        function startGame() {
+            const name = nameInput.value.trim();
+            
+            if (name.length === 0) {
+                showError('Please enter your name');
+                return;
+            }
+
+            if (name.length < 2) {
+                showError('Name must be at least 2 characters');
+                return;
+            }
+
+            // Store player name globally
+            window.playerName = name;
+            
+            // Show loading
+            startButton.disabled = true;
+            startButton.textContent = 'CONNECTING...';
+            loadingSpinner.classList.add('active');
+            console.log('Player name set to:', name);
+            socket.emit('setName', name);
+            
+
+            // Fade out login screen after brief delay
             setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-            }, 1000);
+                loginScreen.classList.add('hidden');
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    loginScreen.remove();
+                }, 500);
+            }, 500);
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.style.display = 'block';
+        }
+
+        // Focus input on load
+        window.addEventListener('load', () => {
+            nameInput.focus();
         });
     </script>
 </body>

@@ -161,6 +161,9 @@ function update() {
     
     // Culling
     cullEntities(this);
+
+    // Update nametags
+    updateNametags();
     
     // Update UI
     gameUI.updateMinimap(players, socket.id, WORLD_WIDTH, WORLD_HEIGHT);
@@ -193,7 +196,7 @@ function setupSocketListeners(scene) {
     socket.on('currentPlayers', (serverPlayers) => {
         for (let id in serverPlayers) {
             addPlayer(scene, id, serverPlayers[id].x, serverPlayers[id].y, 
-                     serverPlayers[id].health, serverPlayers[id].status);
+                     serverPlayers[id].health, serverPlayers[id].status, serverPlayers[id].name);
         }
         setupMyPlayerCollision(scene);
         
@@ -206,6 +209,41 @@ function setupSocketListeners(scene) {
         gameUI.updatePlayerCount(Object.keys(serverPlayers).length);
     });
 
+
+    //setname
+
+        socket.on('playerNameSet', (data) => {
+            if (players[data.id]) {
+                players[data.id].name = data.name;
+                x= players[data.id].x;
+                y= players[data.id].y; 
+                      // Create nametag (name above player)
+                const nametag = scene.add.text(x, y - 30, data.name, {
+                    fontSize: '14px',
+                    fontFamily: 'Arial',
+                    color: '#ffffff',
+                    backgroundColor: '#000000',
+                    padding: { x: 6, y: 3 },
+                    alpha: 0.8
+                });
+                nametag.setOrigin(0.5);
+                nametag.setDepth(11);
+
+                    // Create initial letter (in center of player)
+                const initialText = scene.add.text(x, y, data.name.charAt(0).toUpperCase(), {
+                    fontSize: '20px',
+                    fontFamily: 'Arial',
+                    color: '#0a0a15',
+                    fontStyle: 'bold'
+                });
+                initialText.setOrigin(0.5);
+                initialText.setDepth(11);
+
+                    // Store references to nametag and initialText on the player object
+                players[data.id].nametag = nametag;
+                players[data.id].initialText = initialText;
+            }
+        });
     // Current landmines
     socket.on('currentLandmines', (serverLandmines) => {
         for (let id in serverLandmines) {
@@ -218,6 +256,8 @@ function setupSocketListeners(scene) {
             });
         }
     });
+
+    
 
     // Entity sync
     socket.on('entitySync', (data) => {
@@ -258,7 +298,7 @@ function setupSocketListeners(scene) {
 
     // New player
     socket.on('newPlayer', (data) => {
-        addPlayer(scene, data.id, data.x, data.y, data.health, data.status);
+        addPlayer(scene, data.id, data.x, data.y, data.health, data.status, data.name);
         
         if (data.id === socket.id) {
             const myPlayer = players[socket.id];
@@ -357,7 +397,9 @@ function setupInputHandlers(scene) {
 }
 
 // ==================== PLAYER MANAGEMENT ====================
-function addPlayer(scene, id, x, y, health, status) {
+
+
+function addPlayer(scene, id, x, y, health, status, name) {
     const player = scene.physics.add.sprite(x, y, 'player');
     player.setCircle(16);
     player.setCollideWorldBounds(true);
@@ -366,6 +408,13 @@ function addPlayer(scene, id, x, y, health, status) {
     player.health = health;
     player.status = status || 'alive';
     player.k = 0;
+
+
+    
+
+
+    player.nametag = '';
+    player.initialText = '';
 
     if (status === 'dead') {
         player.setTint(0xff5555);
@@ -618,4 +667,19 @@ function createBackground(scene) {
     
     graphics.lineStyle(6, 0xff3366, 1);
     graphics.strokeRect(2, 2, WORLD_WIDTH - 4, WORLD_HEIGHT - 4);
+}
+
+// ==================== nametag ====================
+function updateNametags() {
+    for (let id in players) {
+        const player = players[id];
+        if (player.nametag) {
+            player.nametag.x = player.x;
+            player.nametag.y = player.y - 30;
+        }
+        if (player.initialText) {
+            player.initialText.x = player.x;
+            player.initialText.y = player.y;
+        }
+    }
 }
